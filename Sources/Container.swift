@@ -310,6 +310,18 @@ extension Container: Resolver {
         return resolve(serviceType, name: nil)
     }
 
+    
+    public func getAllAliveServices<Service>(_ serviceType: Service.Type) -> [Service] {
+        var services: [Service] = []
+        self.services.forEach {
+            if let instance = $1.storage.instance,
+                let service = instance as? Service {
+                services.append(service)
+            }
+        }
+        return services
+    }
+    
     /// Retrieves the instance with the specified service type and registration name.
     ///
     /// - Parameters:
