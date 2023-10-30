@@ -4,10 +4,10 @@ Pod::Spec.new do |s|
   s.summary          = "Dependency injection framework for Swift"
   s.description      = "Swinject is a dependency injection framework for Swift, to manage the dependencies of types in your system."
 
-  s.homepage         = "https://github.com/Swinject/Swinject"
+  s.homepage         = "https://github.com/yaotiancheng-ola/Swinject"
   s.license          = 'MIT'
   s.author           = 'Swinject Contributors'
-  s.source           = { :git => "https://github.com/Swinject/Swinject.git", :tag => s.version.to_s }
+  s.source           = { :git => "https://github.com/yaotiancheng-ola/Swinject.git", :tag => s.version.to_s }
 
   s.swift_version    = '5.0'
   s.source_files     = 'Sources/**/*.{swift,h}'
