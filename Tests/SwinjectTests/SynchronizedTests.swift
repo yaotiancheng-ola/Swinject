@@ -67,6 +67,34 @@ class SynchronizedResolverTests: XCTestCase {
 
         XCTAssert(graphs.count == totalThreads)
     }
+    
+    func testSynchronizedResolverSynchronousReadsWrites() {
+        let iterationCount = 3_000
+        let container = Container().synchronize() as! Container
+        let registerExpectation = expectation(description: "register")
+        let resolveExpectations = (0..<iterationCount).map { expectation(description: String(describing: $0)) }
+        let resolutionLock = NSLock()
+
+        DispatchQueue.global(qos: .background).async {
+            for index in 0..<iterationCount {
+                container.register(Animal.self, factory: { _ in
+                    Cat(name: "\(index)")
+                })
+            }
+            registerExpectation.fulfill()
+        }
+        
+        DispatchQueue.global(qos: .background).async {
+            DispatchQueue.concurrentPerform(iterations: iterationCount) { (index) in
+                _ = container.resolve(Animal.self)
+                resolutionLock.lock()
+                resolveExpectations[index].fulfill()
+                resolutionLock.unlock()
+            }
+        }
+        
+        wait(for: [registerExpectation] + resolveExpectations, timeout: 3)
+    }
 
     // MARK: Nested resolve
 
@@ -154,6 +182,41 @@ class SynchronizedResolverTests: XCTestCase {
                 _ = lazy?.instance
             }
         }
+    }
+
+    func testGraphIdentifierRestoredAfterLazyResolve() {
+        let container = Container()
+        container.register(LazilyResolvedProtocol.self) { _ in
+            LazilyResolved()
+        }
+        container.register(LazySingletonProtocol.self) {
+            let lazy = $0.resolve(Lazy<LazilyResolvedProtocol>.self)!
+            return LazyChild(lazy: lazy)
+        }
+        .inObjectScope(.container)
+        container.register(LazyChildProtocol.self) {
+            let lazy = $0.resolve(Lazy<LazilyResolvedProtocol>.self)!
+            return LazyChild(lazy: lazy)
+        }
+        container.register(LazyParentProtocol.self) {
+            let child1 = $0.resolve(LazyChildProtocol.self)!
+            let singleton = $0.resolve(LazySingletonProtocol.self)!
+            // Previously, accessing instance here would permanently
+            // hijack the graph identifier to the 'recalled' state.
+            _ = singleton.lazy.instance
+            let child2 = $0.resolve(LazyChildProtocol.self)!
+            return LazyParent(child1: child1, child2: child2)
+        }
+
+        // Resolve, but don't access lazy value yet.
+        _ = container.resolve(LazySingletonProtocol.self)!
+
+        // First lazy value access in LazyParent resolve, this 
+        // could've happened in its init or wherever.
+        let parent = container.resolve(LazyParentProtocol.self)!
+
+        XCTAssertIdentical(parent.child1, parent.child2)
+        XCTAssertIdentical(parent.child1.lazy.instance, parent.child2.lazy.instance)
     }
 }
 
