@@ -438,3 +438,19 @@ extension Container: CustomStringConvertible {
 private extension Container {
     static let graphIdentifierKey = ServiceKey(serviceType: GraphIdentifier.self, argumentsType: Resolver.self)
 }
+
+extension Container {
+    public func remove<Service>(_: Service.Type) {
+        var willRemoveKey: ServiceKey?
+        for (key, value) in services {
+            if (value.serviceType == Service.self) {
+                willRemoveKey = key
+            }
+        }
+        
+        if let willRemoveKey {
+            services.removeValue(forKey: willRemoveKey)
+        }
+    }
+    
+}
