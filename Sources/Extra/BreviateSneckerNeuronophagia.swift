@@ -90,7 +90,6 @@ class BreviateSneckerNeuronophagia {
         print(eucarida)
         print(unversified)
         print(camphoryl)
-        print(catch)
         print(mannitol)
         print(camphoryl)
     }
